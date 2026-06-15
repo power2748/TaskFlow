@@ -1,0 +1,29 @@
+﻿@page "/register"
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<h3>Регистрация</h3>
+
+<input @bind="email" placeholder="Email" />
+<input @bind="password" type="password" placeholder="Пароль" />
+<button @onclick="RegisterAsync">Зарегистрироваться</button>
+
+@if (!string.IsNullOrEmpty(error))
+{
+    <p style="color:red">@error</p>
+}
+
+@code {
+    string email = "", password = "", error = "";
+
+    async Task RegisterAsync()
+    {
+        var response = await Http.PostAsJsonAsync("/auth/register",
+            new { email, password });
+
+        if (response.IsSuccessStatusCode)
+            Nav.NavigateTo("/login");
+        else
+            error = "Ошибка регистрации";
+    }
+}

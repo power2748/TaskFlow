@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/Элементы решения/">
+    <File Path="Directory.Build.props" />
+  </Folder>
+  <Project Path="AppHost/AppHost.csproj" />
+  <Project Path="AuthService/AuthService.csproj" />
+  <Project Path="BlazorFrontend/BlazorFrontend.csproj" />
+  <Project Path="Contracts/Contracts.csproj" />
+  <Project Path="Gateway/Gateway.csproj" />
+  <Project Path="ServiceDefaults/ServiceDefaults.csproj" />
+  <Project Path="TaskService/TaskService.csproj" />
+</Solution>

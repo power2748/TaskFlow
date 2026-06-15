@@ -1,0 +1,38 @@
+﻿@page "/login"
+@inject HttpClient Http
+@inject CustomAuthStateProvider AuthProvider
+@inject NavigationManager Nav
+
+<h3>Вход</h3>
+
+<input @bind="email" placeholder="Email" />
+<input @bind="password" type="password" placeholder="Пароль" />
+<button @onclick="LoginAsync">Войти</button>
+<a href="/register">Регистрация</a>
+
+@if (!string.IsNullOrEmpty(error))
+{
+    <p style="color:red">@error</p>
+}
+
+@code {
+    string email = "", password = "", error = "";
+
+    async Task LoginAsync()
+    {
+        var response = await Http.PostAsJsonAsync("/auth/login",
+            new { email, password });
+
+        if (response.IsSuccessStatusCode)
+        {
+            var result = await response.Content
+                .ReadFromJsonAsync<TokenResponse>();
+            await AuthProvider.SetTokenAsync(result!.Token);
+            Nav.NavigateTo("/dashboard");
+        }
+        else
+            error = "Неверный email или пароль";
+    }
+
+    record TokenResponse(string Token);
+}
