@@ -6,18 +6,37 @@
 @inject CustomAuthStateProvider AuthProvider
 @inject NavigationManager Nav
 
-<h3>@(Id == null ? "Создать задачу" : "Редактировать задачу")</h3>
+<div class="main-block">
+    <nav>
+        <div class="nav-main">
+            <div class="title">
+                <h1>TaskFlow</h1>
+            </div>
+            <div class="exit-btn">
+               <a href="/dashboard">Назад</a>
+            </div>
+        </div>
+    </nav>
+    <div class="task-block">
+        <div class="task-title">
+            <h3>@(Id == null ? "Создать задачу" : "Редактировать задачу")</h3>
+        </div>
+        <div class="task-edit">
+            <input @bind="title" placeholder="Название" />
+            <input @bind="description" placeholder="Описание" />
 
-<input @bind="title" placeholder="Название" />
-<input @bind="description" placeholder="Описание" />
-
-@if (Id != null)
-{
-    <label>
-        <input type="checkbox" @bind="isCompleted" /> Выполнено
-    </label>
-}
-<button @onclick="SaveAsync">Сохранить</button>
+            @if (Id != null)
+            {
+                <div class="checkbox-block">
+                    <label>
+                        <input type="checkbox" class="checkbox-input" @bind="isCompleted" /> Выполнено
+                    </label>
+                </div>
+            }
+            <button @onclick="SaveAsync">Сохранить</button>
+        </div>
+    </div>
+</div>
 
 @code {
     [Parameter] public Guid? Id { get; set; }

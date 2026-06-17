@@ -6,37 +6,54 @@
 @inject CustomAuthStateProvider AuthProvider
 @inject NavigationManager Nav
 
-<h3>Мои задачи</h3>
-<button @onclick='() => Nav.NavigateTo("/tasks/create")'>Создать задачу</button>
-<button @onclick="LogoutAsync">Выйти</button>
 
-@if (tasks is null)
-{
-    <p>Загрузка...</p>
-}
-else
-{
-    @foreach (var task in tasks)
-    {
-        <div style="margin-bottom: 10px; padding: 10px; border-bottom: 1px solid #eee;">
-            <b>@task.Title</b> — @(task.IsCompleted ? "✅" : "⏳")
-
-            @if (!string.IsNullOrEmpty(task.AssignedUserEmail))
-            {
-                <span style="font-size: 0.8em; color: gray; margin-left: 10px;">
-                    (@task.AssignedUserEmail)
-                </span>
-            }
-
-            <button @onclick='() => Nav.NavigateTo($"/tasks/{task.Id}")' style="margin-left: 10px;">
-                Редактировать
-            </button>
-            <button @onclick="() => DeleteTaskAsync(task.Id)" style="color: red; margin-left: 5px;">
-                ❌
-            </button>
+<div class="main-block">
+    <nav>
+        <div class="nav-main">
+            <div class="title">
+                <h1>TaskFlow</h1>
+            </div>
+            <div class="exit-btn">
+                <button @onclick="LogoutAsync">Выйти</button>
+            </div>
         </div>
-    }
-}
+    </nav>
+    <div class="task-title">
+        <h3>Мои задачи</h3>
+        <button @onclick='() => Nav.NavigateTo("/tasks/create")'>Создать задачу</button>
+    </div>
+    
+    <div class="task-block">
+    
+        @if (tasks is null)
+        {
+            <p>Загрузка...</p>
+        }
+        else
+        {
+            @foreach (var task in tasks)
+            {
+                <div class="task">
+                    <b>@task.Title</b> — @(task.IsCompleted ? "✅" : "⏳")
+
+                    @if (!string.IsNullOrEmpty(task.AssignedUserEmail))
+                    {
+                        <span style="font-size: 0.8em; color: white; margin-left: 10px;">
+                            (@task.AssignedUserEmail)
+                        </span>
+                    }
+
+                    <button @onclick='() => Nav.NavigateTo($"/tasks/{task.Id}")' style="margin-left: 10px;">
+                        Редактировать
+                    </button>
+                    <button @onclick="() => DeleteTaskAsync(task.Id)" style="color: red; margin-left: 5px;">
+                        ❌
+                    </button>
+                </div>
+            }
+        }
+    </div>
+</div>
 
 @code {
     List<TaskDto>? tasks;
