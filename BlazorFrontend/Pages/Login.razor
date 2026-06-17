@@ -3,17 +3,31 @@
 @inject CustomAuthStateProvider AuthProvider
 @inject NavigationManager Nav
 
-<h3>Вход</h3>
-
-<input @bind="email" placeholder="Email" />
-<input @bind="password" type="password" placeholder="Пароль" />
-<button @onclick="LoginAsync">Войти</button>
-<a href="/register">Регистрация</a>
-
-@if (!string.IsNullOrEmpty(error))
-{
-    <p style="color:red">@error</p>
-}
+<div class="auth-container">
+    <div class="auth-form">
+        <div class="form__title">
+            <h3>Вход</h3>
+        </div>
+        <div class="form__email">
+            <input @bind="email" placeholder="Email" />
+        </div>
+        <div class="form__password">
+            <input @bind="password" type="password" placeholder="Пароль" />
+        </div>
+        <div class="form__button">
+            <button @onclick="LoginAsync">Войти</button>
+        </div>
+        <div class="form__register">
+            <a href="/register">Регистрация</a>
+        </div>
+        <div class="form__error">
+            @if (!string.IsNullOrEmpty(error))
+            {
+                <p style="color:red">@error</p>
+            }
+        </div>
+    </div>
+</div>
 
 @code {
     string email = "", password = "", error = "";

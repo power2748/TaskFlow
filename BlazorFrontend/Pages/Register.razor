@@ -2,11 +2,32 @@
 @inject HttpClient Http
 @inject NavigationManager Nav
 
-<h3>Регистрация</h3>
+<div class="auth-container">
+    <div class="auth-form">
+        <div class="form__title">
+            <h3>Регистрация</h3>
+        </div>
+        <div class="form__email">
+            <input @bind="email" placeholder="Email" />
+        </div>
+        <div class="form__password">
+            <input @bind="password" type="password" placeholder="Пароль" />
+        </div>
+        <div class="form__button">
+            <button @onclick="RegisterAsync">Зарегистрироваться</button>
+        </div>
+        <div class="form__login">
+            <a href="/login">Вход</a>
+        </div>
+        <div class="form__error">
+            @if (!string.IsNullOrEmpty(error))
+            {
+                <p style="color:red">@error</p>
+            }
+        </div>
+    </div>
+</div>
 
-<input @bind="email" placeholder="Email" />
-<input @bind="password" type="password" placeholder="Пароль" />
-<button @onclick="RegisterAsync">Зарегистрироваться</button>
 
 @if (!string.IsNullOrEmpty(error))
 {

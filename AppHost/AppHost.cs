@@ -10,12 +10,13 @@ var taskDb = postgres.AddDatabase("taskdb");
 // Сервисы
 var authService = builder.AddProject<Projects.AuthService>("authservice")
                      .WithHttpEndpoint(port: 5001, name: "http") // <-- Фиксируем порт бэкенда!
-                     .WithReference(authDb);
+                     .WithReference(authDb).WaitFor(authDb);
 
 var taskService = builder.AddProject<Projects.TaskService>("taskservice")
     .WithHttpEndpoint(port: 5002, name: "http") // <-- Фиксируем порт бэкенда!
     .WithReference(taskDb)
-    .WithReference(authDb);
+    .WithReference(authDb)
+    .WaitFor(taskDb);
 
 // Мы жестко говорим Aspire: "Всегда запускай Gateway на порту 5000 для HTTP"
 var gateway = builder.AddProject<Projects.Gateway>("gateway")

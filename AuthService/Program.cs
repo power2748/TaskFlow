@@ -50,20 +50,20 @@ public class Program
         {
             var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
 
-            for (int i = 0; i < 10; i++)
-            {
+            //for (int i = 0; i < 10; i++)
+            //{
                 try
                 {
                     db.Database.Migrate();
                     Console.WriteLine("Database ready!");
-                    break;
+                    //break;
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"DB attempt {i + 1} failed: {ex.Message}");
+                    //Console.WriteLine($"DB attempt {i + 1} failed: {ex.Message}");
                     Thread.Sleep(3000);
                 }
-            }
+            //}
         }
 
         app.Run();
