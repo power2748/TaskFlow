@@ -6,7 +6,6 @@
 @inject CustomAuthStateProvider AuthProvider
 @inject NavigationManager Nav
 
-
 <div class="main-block">
     <nav>
         <div class="nav-main">
@@ -18,37 +17,106 @@
             </div>
         </div>
     </nav>
+
     <div class="task-title">
-        <h3>Мои задачи</h3>
+        <h3>Личные задачи</h3>
         <button @onclick='() => Nav.NavigateTo("/tasks/create")'>Создать задачу</button>
     </div>
-    
+
     <div class="task-block">
-    
-        @if (tasks is null)
+        @if (personalTasks is null)
         {
             <p>Загрузка...</p>
         }
+        else if (!personalTasks.Any())
+        {
+            <p>Нет личных задач</p>
+        }
         else
         {
-            @foreach (var task in tasks)
+            @foreach (var task in personalTasks)
             {
                 <div class="task">
                     <b>@task.Title</b> — @(task.IsCompleted ? "✅" : "⏳")
-
-                    @if (!string.IsNullOrEmpty(task.AssignedUserEmail))
-                    {
-                        <span style="font-size: 0.8em; color: white; margin-left: 10px;">
-                            (@task.AssignedUserEmail)
-                        </span>
-                    }
-
+                    <span style="font-size: 0.8em; color: gray; margin-left: 10px;">
+                        (@task.AssignedUserEmail)
+                    </span>
                     <button @onclick='() => Nav.NavigateTo($"/tasks/{task.Id}")' style="margin-left: 10px;">
                         Редактировать
                     </button>
-                    <button @onclick="() => DeleteTaskAsync(task.Id)" style="color: red; margin-left: 5px;">
-                        ❌
-                    </button>
+                    <button @onclick="() => DeleteTaskAsync(task.Id)" style="color: red; margin-left: 5px;">❌</button>
+                </div>
+            }
+        }
+    </div>
+
+    <div class="project-title">
+        <h3>Мои проекты</h3>
+        <button @onclick='() => Nav.NavigateTo("/projects/create")'>Создать проект</button>
+    </div>
+
+    <div class="project-block">
+        @if (projects is null)
+        {
+            <p>Загрузка...</p>
+        }
+        else if (!projects.Any())
+        {
+            <p>У вас пока нет проектов</p>
+        }
+        else
+        {
+            @foreach (var project in projects)
+            {
+                <div class="project">
+                    <div>
+                        <b>@project.Name</b>
+                        <span style="color:gray; margin-left:10px;">
+                            Участников: @project.Members.Count
+                        </span>
+                        <button @onclick='() => Nav.NavigateTo($"/projects/{project.Id}")'>
+                            Открыть
+                        </button>
+                        @if (project.OwnerId == currentUserId)
+                        {
+                            <button @onclick="() => DeleteProjectAsync(project.Id)"
+                                    style="color:red; margin-left:5px;">
+                                ❌
+                            </button>
+                        }
+                    </div>
+
+                    @* Задачи этого проекта *@
+                    @{
+                        var thisProjectTasks = projectTasks
+                            .Where(t => t.ProjectId == project.Id)
+                            .ToList();
+                    }
+                    @if (thisProjectTasks.Any())
+                    {
+                        <div style="margin-left: 20px; margin-top: 8px;">
+                            @foreach (var task in thisProjectTasks)
+                            {
+                                <div class="task">
+                                    <b>@task.Title</b> — @(task.IsCompleted ? "✅" : "⏳")
+                                    @if (!string.IsNullOrEmpty(task.AssignedUserEmail))
+                                    {
+                                        <span style="font-size: 0.8em; color: gray; margin-left: 10px;">
+                                            (@task.AssignedUserEmail)
+                                        </span>
+                                    }
+                                    <button @onclick='() => Nav.NavigateTo($"/tasks/{task.Id}")' style="margin-left: 10px;">
+                                        Редактировать
+                                    </button>
+                                    <button @onclick="() => DeleteTaskAsync(task.Id)" style="color: red; margin-left: 5px;">❌</button>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p style="margin-left: 20px; color: gray; font-size: 0.9em;">Нет задач в проекте</p>
+                    }
                 </div>
             }
         }
@@ -56,24 +124,40 @@
 </div>
 
 @code {
-    List<TaskDto>? tasks;
+    List<TaskDto>? allTasks;
+    List<TaskDto> personalTasks = new();
+    List<TaskDto> projectTasks = new();
+    List<ProjectDto>? projects;
+    Guid currentUserId;
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthProvider.GetAuthenticationStateAsync();
+        var userIdStr = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-        var userId = authState.User
-            .FindFirst(ClaimTypes.NameIdentifier)?
-            .Value;
-
-        if (string.IsNullOrEmpty(userId))
+        if (string.IsNullOrEmpty(userIdStr))
         {
             Nav.NavigateTo("/login");
             return;
         }
 
-        // Обычный рабочий запрос без отлова 401
-        tasks = await Http.GetFromJsonAsync<List<TaskDto>>($"/api/tasks/{userId}");
+        currentUserId = Guid.Parse(userIdStr);
+
+        allTasks = await Http.GetFromJsonAsync<List<TaskDto>>($"/api/tasks/{currentUserId}");
+
+        if (allTasks != null)
+        {
+            personalTasks = allTasks.Where(t => t.ProjectId == null).ToList();
+            projectTasks = allTasks.Where(t => t.ProjectId != null).ToList();
+        }
+
+        projects = await Http.GetFromJsonAsync<List<ProjectDto>>($"/api/projects/{currentUserId}");
+    }
+
+    async Task DeleteProjectAsync(Guid projectId)
+    {
+        await Http.DeleteAsync($"/api/projects/{projectId}");
+        Nav.NavigateTo("/dashboard", forceLoad: true);
     }
 
     async Task LogoutAsync()
@@ -84,25 +168,16 @@
 
     async Task DeleteTaskAsync(Guid taskId)
     {
-        // Отправляем DELETE запрос на шлюз
         var response = await Http.DeleteAsync($"/api/tasks/{taskId}");
-
         if (response.IsSuccessStatusCode)
         {
-            // Если в базе удалилось успешно, убираем задачу из интерфейса
-            if (tasks != null)
-            {
-                var taskToRemove = tasks.FirstOrDefault(t => t.Id == taskId);
-                if (taskToRemove != null)
-                {
-                    tasks.Remove(taskToRemove);
-                }
-            }
-        }
-        else
-        {
-            Console.WriteLine("Не удалось удалить задачу на бэкенде");
+            personalTasks = personalTasks.Where(t => t.Id != taskId).ToList();
+            projectTasks = projectTasks.Where(t => t.Id != taskId).ToList();
+            allTasks = personalTasks.Concat(projectTasks).ToList();
         }
     }
-    record TaskDto(Guid Id, string Title, bool IsCompleted, string AssignedUserEmail);
+
+    record TaskDto(Guid Id, string Title, bool IsCompleted, string AssignedUserEmail, Guid? ProjectId);
+    record ProjectDto(Guid Id, string Name, Guid OwnerId, List<ProjectMemberDto> Members);
+    record ProjectMemberDto(Guid UserId, string Email);
 }

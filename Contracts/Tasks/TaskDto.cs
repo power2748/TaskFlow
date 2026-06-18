@@ -4,5 +4,5 @@ using System.Text;
 
 namespace Contracts.Tasks
 {
-    public record TaskDto(Guid Id, string Title, string Description, bool IsCompleted, string AssignedUserEmail);
+    public record TaskDto(Guid Id, string Title, string Description, bool IsCompleted, string AssignedUserEmail, Guid? ProjectId);
 }

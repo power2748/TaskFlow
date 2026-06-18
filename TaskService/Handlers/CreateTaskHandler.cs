@@ -17,7 +17,8 @@ public class CreateTaskHandler
             Description = command.Description,
             IsCompleted = false,
             CreatedBy = command.CreatedBy,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            ProjectId = command.ProjectId
         };
 
         db.Tasks.Add(task);

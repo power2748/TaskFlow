@@ -1,5 +1,6 @@
 ﻿@page "/tasks/create"
 @page "/tasks/{Id:guid}"
+@page "/tasks/create/{ProjectId:guid}"
 @using System.Security.Claims
 @attribute [Authorize]
 @inject HttpClient Http
@@ -76,6 +77,7 @@
         }
     }
 
+    [Parameter] public Guid? ProjectId { get; set; }
     async Task SaveAsync()
     {
         if (Id == null)
@@ -91,7 +93,7 @@
             }
 
             await Http.PostAsJsonAsync("/api/tasks",
-                new { title, description, createdBy = currentUserId });
+                new { title, description, createdBy = currentUserId, projectId = ProjectId });
         }
         else
         {

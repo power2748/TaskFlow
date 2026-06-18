@@ -1,4 +1,4 @@
-/* CSS for Dashboard component */
+/* CSS for ProjectDetail component */
 .main-block {
     background: linear-gradient(to bottom right, #20DAEA, #10E7DC);
     height: 100%;
@@ -29,49 +29,35 @@
 .exit-btn {
     grid-column: 3;
     justify-self: center;
-   
 }
 
-.exit-btn button {
-    background-color: #F79E02;
-    color: white;
-    border: none;
-    border-radius: 2rem;
-    font-size: 1.5rem;
-    padding-left: 1rem;
-    padding-right: 1rem;
-}
+    .exit-btn a {
+        background-color: #F79E02;
+        color: white;
+        border: none;
+        border-radius: 2rem;
+        font-size: 1.5rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+        text-decoration: none
+    }
 
-.task-title, .project-title {
+.project-title {
     display: flex;
     flex-flow: row wrap;
     margin: 2rem;
     color: white;
 }
 
-    .task-title button, .project-title button {
-        margin-left: 2rem;
-        background-color: #1B9CE5;
-        color: white;
-        border: none;
-        border-radius: 1rem;
-        transition: 0.3s ease;
-    }
-
-        .task-title button:hover, .project-title button:hover {
-            background-color: white;
-            color: black;
-            mix-blend-mode: screen;
-        }
-
-.task-block, .project-block {
-    display: flex;
-    justify-content: flex-start;
-    align-items: flex-start;
-    flex-flow: row wrap;
+.project-edit input {
+    border: none;
+    border-radius: 2rem;
+    padding: 1rem;
 }
 
-.task, .project {
+.task {
     background-color: #1B9CE5;
     padding: 1rem;
     margin: 1rem;
@@ -79,7 +65,7 @@
     color: white;
 }
 
-    .task button, .project button {
+    .task button {
         background-color: white;
         color: #0074E1;
         border: solid;
@@ -89,8 +75,41 @@
         transition: 0.3s;
     }
 
-        .task button:hover, .project button:hover {
+        .task button:hover {
             background-color: #0074E1;
             color: white;
             border-color: white;
         }
+
+.task-title {
+    display: flex;
+    flex-flow: row wrap;
+    margin: 2rem;
+    color: white;
+}
+
+    .task-title button, .project-edit button {
+        margin-left: 2rem;
+        background-color: #1B9CE5;
+        color: white;
+        border: none;
+        border-radius: 1rem;
+        transition: 0.3s ease;
+    }
+
+        .task-title button:hover, .project-edit button:hover {
+            background-color: white;
+            color: black;
+            mix-blend-mode: screen;
+        }
+
+.task-block {
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-start;
+    flex-flow: row wrap;
+}
+
+h4 {
+    color: white;
+}

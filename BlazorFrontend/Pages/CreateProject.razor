@@ -1,0 +1,49 @@
+﻿@page "/projects/create"
+@attribute [Authorize]
+@inject HttpClient Http
+@inject CustomAuthStateProvider AuthProvider
+@inject NavigationManager Nav
+@using System.Security.Claims
+
+<div class="main-block">
+    <nav>
+        <div class="nav-main">
+            <div class="title">
+                <h1>TaskFlow</h1>
+            </div>
+            <div class="exit-btn">
+                <a href="/dashboard">Назад</a>
+            </div>
+        </div>
+    </nav>
+    <div class="task-block">
+        <div class="task-title">
+            <h3>Создать проект</h3>
+        </div>
+        <div class="task-edit">
+            <input @bind="name" placeholder="Название проекта" />
+            <button @onclick="CreateAsync">Создать</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    string name = "";
+
+    async Task CreateAsync()
+    {
+        if (string.IsNullOrEmpty(name)) return;
+
+        var authState = await AuthProvider.GetAuthenticationStateAsync();
+        var userIdStr = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdStr)) { Nav.NavigateTo("/login"); return; }
+
+        await Http.PostAsJsonAsync("/api/projects", new
+        {
+            name,
+            ownerId = Guid.Parse(userIdStr)
+        });
+
+        Nav.NavigateTo("/dashboard");
+    }
+}

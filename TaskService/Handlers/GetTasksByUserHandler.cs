@@ -40,20 +40,38 @@ public class GetTasksByUserHandler
                            ""Title"" as title, 
                            ""Description"" as description, 
                            ""IsCompleted"" as iscompleted,
-                           ""CreatedBy"" as createdby
+                           ""CreatedBy"" as createdby,
+                           ""ProjectId"" as projectid
                     FROM write.tasks";
             queryParams = new { };
         }
         else
         {
+            var projectTasks = await taskConnection.QueryAsync<dynamic>(
+       @"SELECT t.""Id"", t.""Title"", t.""ProjectId"" 
+          FROM write.tasks t
+          INNER JOIN write.project_members pm ON pm.""ProjectId"" = t.""ProjectId""
+          WHERE pm.""UserId"" = @UserId",
+       new { UserId = userId });
+
+            Console.WriteLine($"[DEBUG] Tasks through INNER JOIN: {projectTasks.Count()}");
             // Обычный пользователь видит только свои
-            sql = @"SELECT ""Id"" as id, 
-                           ""Title"" as title, 
-                           ""Description"" as description, 
-                           ""IsCompleted"" as iscompleted,
-                           ""CreatedBy"" as createdby
-                    FROM write.tasks
-                    WHERE ""CreatedBy"" = @UserId";
+            sql = @"
+                SELECT DISTINCT 
+                 t.""Id"" as id, 
+                t.""Title"" as title, 
+                t.""Description"" as description, 
+                t.""IsCompleted"" as iscompleted,
+                t.""CreatedBy"" as createdby,
+                t.""ProjectId"" as projectid
+                FROM write.tasks t
+                LEFT JOIN write.projects p ON p.""Id"" = t.""ProjectId""
+                LEFT JOIN write.project_members pm ON pm.""ProjectId"" = p.""Id""
+                WHERE t.""CreatedBy"" = @UserId          
+                   OR p.""OwnerId"" = @UserId            
+                   OR pm.""UserId"" = @UserId            
+                ";
+            queryParams = new { UserId = userId };
             queryParams = new { UserId = userId };
         }
 
@@ -104,7 +122,8 @@ public class GetTasksByUserHandler
             t.Title,
             t.Description,
             t.IsCompleted,
-            isAdmin ? (t.AssignedUserEmail ?? "Неизвестный пользователь") : "Вы"
+            isAdmin ? (t.AssignedUserEmail ?? "Неизвестный пользователь") : "Вы",
+            t.ProjectId
         ));
     }
 
@@ -130,7 +149,8 @@ public class GetTasksByUserHandler
             dbTask.Title,
             dbTask.Description,
             dbTask.IsCompleted,
-            string.Empty
+            string.Empty,
+            dbTask.ProjectId
         );
 
         return Results.Ok(result);
@@ -144,7 +164,8 @@ public class DbTaskExtended
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public bool IsCompleted { get; set; }
-    public Guid CreatedBy { get; set; } // Потребуется нам для связи баз в коде
+    public Guid CreatedBy { get; set; }
+    public Guid? ProjectId { get; set; } // добавь
     public string? AssignedUserEmail { get; set; }
 }
 
