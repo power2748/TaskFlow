@@ -7,6 +7,7 @@
   <Project Path="BlazorFrontend/BlazorFrontend.csproj" />
   <Project Path="Contracts/Contracts.csproj" />
   <Project Path="Gateway/Gateway.csproj" />
+  <Project Path="NotificationService/NotificationService.csproj" />
   <Project Path="ServiceDefaults/ServiceDefaults.csproj" />
   <Project Path="TaskService/TaskService.csproj" />
 </Solution>

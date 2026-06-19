@@ -2,13 +2,15 @@
 using TaskService.Data;
 using TaskService.Models;
 using Wolverine.Http;
+using Wolverine;
+using Contracts.Events;
 
 namespace TaskService.Handlers;
 
 public class CreateTaskHandler
 {
     [WolverinePost("/api/tasks")]
-    public async Task Handle(CreateTask command, AppDbContext db)
+    public async Task Handle(CreateTask command, AppDbContext db, IMessageBus bus)
     {
         var task = new TaskItem
         {
@@ -23,5 +25,22 @@ public class CreateTaskHandler
 
         db.Tasks.Add(task);
         await db.SaveChangesAsync();
+        await bus.PublishAsync(new TaskAssigned(task.Id, task.CreatedBy, task.Title));
+
+    }
+}
+
+public class LocalTestHandler
+{
+    private readonly ILogger<LocalTestHandler> _logger;
+
+    public LocalTestHandler(ILogger<LocalTestHandler> logger)
+    {
+        _logger = logger;
+    }
+
+    public void Handle(TaskAssigned message)
+    {
+        _logger.LogInformation("🎯 [ТЕСТ] Внутренняя шина TaskService поймала сообщение для задачи: {Title}", message.TaskTitle);
     }
 }

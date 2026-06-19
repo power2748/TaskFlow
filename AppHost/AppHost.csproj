@@ -19,6 +19,7 @@
     <ProjectReference Include="..\AuthService\AuthService.csproj" />
     <ProjectReference Include="..\BlazorFrontend\BlazorFrontend.csproj" />
     <ProjectReference Include="..\Gateway\Gateway.csproj" />
+    <ProjectReference Include="..\NotificationService\NotificationService.csproj" />
     <ProjectReference Include="..\TaskService\TaskService.csproj" />
   </ItemGroup>
 

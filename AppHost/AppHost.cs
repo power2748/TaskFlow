@@ -23,6 +23,13 @@ var gateway = builder.AddProject<Projects.Gateway>("gateway")
                      .WithHttpEndpoint(port: 5000, name: "http") // <-- Фиксируем порт шлюза!
                      .WithReference(authService);
 
+var notificationService = builder.AddProject<Projects.NotificationService>("notificationservice")
+    .WithHttpEndpoint(port: 5100, name: "http") // HTTP эндпоинт
+    .WithEndpoint(targetPort: 5005, scheme: "tcp", name: "wolverine-tcp"); // фиксируем порт для TCP обмена Wolverine
+
+// Если TaskService должен знать адрес уведомлений через переменные среды:
+taskService.WithReference(notificationService);
+
 // Передаем фронтенду
 builder.AddProject<Projects.BlazorFrontend>("blazorfrontend")
        .WithReference(gateway);

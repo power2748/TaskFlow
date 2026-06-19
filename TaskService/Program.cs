@@ -1,15 +1,18 @@
 
+using Contracts.Events;
 using Contracts.Tasks;
+using ImTools;
 using JasperFx.CodeGeneration.Model;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using TaskService.Data;
 using TaskService.Handlers;
 using Wolverine;
 using Wolverine.EntityFrameworkCore;
 using Wolverine.Http;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
+using Wolverine.Transports.Tcp;
 
 namespace TaskService;
 
@@ -17,6 +20,7 @@ public class Program
 {
     public static void Main(string[] args)
     {
+        Console.OutputEncoding = System.Text.Encoding.UTF8;
         var builder = WebApplication.CreateBuilder(args);
 
         builder.AddServiceDefaults();
@@ -27,9 +31,26 @@ public class Program
         builder.Host.UseWolverine(opts =>
         {
             opts.ApplicationAssembly = typeof(Program).Assembly;
-            opts.Policies.AutoApplyTransactions();
+            //opts.Policies.AutoApplyTransactions();
             opts.CodeGeneration.AlwaysUseServiceLocationFor<TaskService.Data.AppDbContext>();
+            //opts.PublishMessage<TaskAssigned>().To(new Uri("tcp://127.0.0.1:5005"));
             //opts.UseEntityFrameworkCoreTransactions();
+            var endpointUri = builder.Configuration["Endpoint:notificationservice:wolverine-tcp"];
+
+            if (!string.IsNullOrEmpty(endpointUri))
+            {
+                // Aspire может вернуть адрес в виде "tcp://localhost:5005" или "tcp://127.0.0.1:5005"
+                opts.PublishMessage<TaskAssigned>().To(new Uri(endpointUri));
+                opts.PublishMessage<TaskUpdated>().To(new Uri(endpointUri));
+                opts.PublishMessage<TaskDeleted>().To(new Uri(endpointUri));
+            }
+            else
+            {
+                // Резервный адрес для локального запуска без оркестратора
+                opts.PublishMessage<TaskAssigned>().To(new Uri("tcp://127.0.0.1:5005"));
+                opts.PublishMessage<TaskUpdated>().To(new Uri("tcp://127.0.0.1:5005"));
+                opts.PublishMessage<TaskDeleted>().To(new Uri("tcp://127.0.0.1:5005"));
+            }
         });
         builder.Services.AddWolverineHttp();
         var jwtKey = builder.Configuration["Jwt:Key"] ?? "super-secret-key-minimum-32-characters!!";

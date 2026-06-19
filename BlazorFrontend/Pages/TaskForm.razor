@@ -26,14 +26,14 @@
             <input @bind="title" placeholder="Название" />
             <input @bind="description" placeholder="Описание" />
 
-            @if (Id != null)
+            @* @if (Id != null)
             {
                 <div class="checkbox-block">
                     <label>
                         <input type="checkbox" class="checkbox-input" @bind="isCompleted" /> Выполнено
                     </label>
                 </div>
-            }
+            } *@
             <button @onclick="SaveAsync">Сохранить</button>
         </div>
     </div>
