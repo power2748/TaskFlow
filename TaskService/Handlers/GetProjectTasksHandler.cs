@@ -17,7 +17,7 @@ namespace TaskService.Handlers
 
             return await connection.QueryAsync<TaskDto>(
                 @"SELECT ""Id"" as id, ""Title"" as title, ""Description"" as description,
-                 ""IsCompleted"" as iscompleted, '' as assigneduseremail, ""ProjectId"" as projectid
+                 ""Status"" as status, '' as assigneduseremail, ""ProjectId"" as projectid
           FROM write.tasks
           WHERE ""ProjectId"" = @ProjectId",
                 parameters);

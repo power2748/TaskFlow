@@ -39,7 +39,7 @@ public class GetTasksByUserHandler
             sql = @"SELECT ""Id"" as id, 
                            ""Title"" as title, 
                            ""Description"" as description, 
-                           ""IsCompleted"" as iscompleted,
+                           ""Status"" as status,
                            ""CreatedBy"" as createdby,
                            ""ProjectId"" as projectid
                     FROM write.tasks";
@@ -61,7 +61,7 @@ public class GetTasksByUserHandler
                  t.""Id"" as id, 
                 t.""Title"" as title, 
                 t.""Description"" as description, 
-                t.""IsCompleted"" as iscompleted,
+                t.""Status"" as status,
                 t.""CreatedBy"" as createdby,
                 t.""ProjectId"" as projectid
                 FROM write.tasks t
@@ -121,7 +121,7 @@ public class GetTasksByUserHandler
             t.Id,
             t.Title,
             t.Description,
-            t.IsCompleted,
+            (Contracts.Tasks.TaskStatus)t.Status,
             isAdmin ? (t.AssignedUserEmail ?? "Неизвестный пользователь") : "Вы",
             t.ProjectId
         ));
@@ -136,7 +136,7 @@ public class GetTasksByUserHandler
             @"SELECT ""Id"" as id, 
                      ""Title"" as title, 
                      ""Description"" as description, 
-                     ""IsCompleted"" as iscompleted
+                     ""Status"" as status
               FROM write.tasks
               WHERE ""Id"" = @Id",
             new { Id = id });
@@ -148,7 +148,7 @@ public class GetTasksByUserHandler
             dbTask.Id,
             dbTask.Title,
             dbTask.Description,
-            dbTask.IsCompleted,
+            (Contracts.Tasks.TaskStatus)dbTask.Status,
             string.Empty,
             dbTask.ProjectId
         );
@@ -163,7 +163,7 @@ public class DbTaskExtended
     public Guid Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public bool IsCompleted { get; set; }
+    public int Status { get; set; }
     public Guid CreatedBy { get; set; }
     public Guid? ProjectId { get; set; } // добавь
     public string? AssignedUserEmail { get; set; }

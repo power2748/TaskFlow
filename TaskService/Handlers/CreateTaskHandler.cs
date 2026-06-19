@@ -15,7 +15,7 @@ public class CreateTaskHandler
             Id = Guid.NewGuid(),
             Title = command.Title,
             Description = command.Description,
-            IsCompleted = false,
+            Status = 0,
             CreatedBy = command.CreatedBy,
             CreatedAt = DateTime.UtcNow,
             ProjectId = command.ProjectId

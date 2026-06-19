@@ -34,10 +34,103 @@
         }
         else
         {
-            @foreach (var task in personalTasks)
+            <div class="kanban-board">
+                <div class="kanban-column"
+                     ondragover="event.preventDefault();"
+                     @ondrop="() => HandleDrop(TaskStatus.ToDo)">
+                    <div class="column-header todo">Нужно сделать</div>
+                    <div class="column-body">
+                        @foreach (var task in personalTasks.Where(t => t.Status == TaskStatus.ToDo))
+                        {
+                            <div class="task-card" draggable="true" @ondragstart="() => HandleDragStart(task)">
+                                <div class="task">
+                                    <b>@task.Title</b> — @(task.Status == TaskStatus.Done ? "✅" : "⏳")
+                                    <span style="font-size: 0.8em; color: gray; margin-left: 10px;">
+                                        (@task.AssignedUserEmail)
+                                    </span>
+                                    <button @onclick='() => Nav.NavigateTo($"/tasks/{task.Id}")' style="margin-left: 10px;">
+                                        Редактировать
+                                    </button>
+                                    <button @onclick="() => DeleteTaskAsync(task.Id)" style="color: red; margin-left: 5px;">❌</button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="kanban-column"
+                     ondragover="event.preventDefault();"
+                     @ondrop="() => HandleDrop(TaskStatus.InProgress)">
+                    <div class="column-header in-progress">В процессе</div>
+                    <div class="column-body">
+                        @foreach (var task in personalTasks.Where(t => t.Status == TaskStatus.InProgress))
+                        {
+                            <div class="task-card" draggable="true" @ondragstart="() => HandleDragStart(task)">
+                                <div class="task">
+                                    <b>@task.Title</b> — @(task.Status == TaskStatus.Done ? "✅" : "⏳")
+                                    <span style="font-size: 0.8em; color: gray; margin-left: 10px;">
+                                        (@task.AssignedUserEmail)
+                                    </span>
+                                    <button @onclick='() => Nav.NavigateTo($"/tasks/{task.Id}")' style="margin-left: 10px;">
+                                        Редактировать
+                                    </button>
+                                    <button @onclick="() => DeleteTaskAsync(task.Id)" style="color: red; margin-left: 5px;">❌</button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="kanban-column"
+                     ondragover="event.preventDefault();"
+                     @ondrop="() => HandleDrop(TaskStatus.CodeReview)">
+                    <div class="column-header review">На проверке</div>
+                    <div class="column-body">
+                        @foreach (var task in personalTasks.Where(t => t.Status == TaskStatus.CodeReview))
+                        {
+                            <div class="task-card" draggable="true" @ondragstart="() => HandleDragStart(task)">
+                                <div class="task">
+                                    <b>@task.Title</b> — @(task.Status == TaskStatus.Done ? "✅" : "⏳")
+                                    <span style="font-size: 0.8em; color: gray; margin-left: 10px;">
+                                        (@task.AssignedUserEmail)
+                                    </span>
+                                    <button @onclick='() => Nav.NavigateTo($"/tasks/{task.Id}")' style="margin-left: 10px;">
+                                        Редактировать
+                                    </button>
+                                    <button @onclick="() => DeleteTaskAsync(task.Id)" style="color: red; margin-left: 5px;">❌</button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="kanban-column"
+                     ondragover="event.preventDefault();"
+                     @ondrop="() => HandleDrop(TaskStatus.Done)">
+                    <div class="column-header done">Готово</div>
+                    <div class="column-body">
+                        @foreach (var task in personalTasks.Where(t => t.Status == TaskStatus.Done))
+                        {
+                            <div class="task-card card-done" draggable="true" @ondragstart="() => HandleDragStart(task)">
+                                <div class="task">
+                                    <b>@task.Title</b> — @(task.Status == TaskStatus.Done ? "✅" : "⏳")
+                                    <span style="font-size: 0.8em; color: gray; margin-left: 10px;">
+                                        (@task.AssignedUserEmail)
+                                    </span>
+                                    <button @onclick='() => Nav.NavigateTo($"/tasks/{task.Id}")' style="margin-left: 10px;">
+                                        Редактировать
+                                    </button>
+                                    <button @onclick="() => DeleteTaskAsync(task.Id)" style="color: red; margin-left: 5px;">❌</button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            @* @foreach (var task in personalTasks)
             {
                 <div class="task">
-                    <b>@task.Title</b> — @(task.IsCompleted ? "✅" : "⏳")
+                    <b>@task.Title</b> — @(task.Status == TaskStatus.Done ? "✅" : "⏳")
                     <span style="font-size: 0.8em; color: gray; margin-left: 10px;">
                         (@task.AssignedUserEmail)
                     </span>
@@ -46,7 +139,7 @@
                     </button>
                     <button @onclick="() => DeleteTaskAsync(task.Id)" style="color: red; margin-left: 5px;">❌</button>
                 </div>
-            }
+            } *@
         }
     </div>
 
@@ -98,7 +191,7 @@
                             @foreach (var task in thisProjectTasks)
                             {
                                 <div class="task">
-                                    <b>@task.Title</b> — @(task.IsCompleted ? "✅" : "⏳")
+                                    <b>@task.Title</b> — @(task.Status == TaskStatus.Done ? "✅" : "⏳")
                                     @if (!string.IsNullOrEmpty(task.AssignedUserEmail))
                                     {
                                         <span style="font-size: 0.8em; color: gray; margin-left: 10px;">
@@ -128,7 +221,15 @@
     List<TaskDto> personalTasks = new();
     List<TaskDto> projectTasks = new();
     List<ProjectDto>? projects;
+    private TaskDto? draggedTask;
     Guid currentUserId;
+    public enum TaskStatus
+    {
+        ToDo = 0,
+        InProgress = 1,
+        CodeReview = 2,
+        Done = 3
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -177,7 +278,48 @@
         }
     }
 
-    record TaskDto(Guid Id, string Title, bool IsCompleted, string AssignedUserEmail, Guid? ProjectId);
+    private void HandleDragStart(TaskDto task)
+    {
+        draggedTask = task;
+    }
+
+    // Метод срабатывает, когда пользователь отпустил карточку над какой-то колонкой
+    private async Task HandleDrop(TaskStatus newStatus)
+    {
+        if (draggedTask != null && draggedTask.Status != newStatus)
+        {
+            // 1. Запоминаем старый статус на случай сбоя сети
+            var oldStatus = draggedTask.Status;
+
+            // 2. Оптимистичный UI: сразу меняем статус на фронте, чтобы не было задержек
+            draggedTask.Status = newStatus;
+
+            // 3. Отправляем PUT-команду на бэкенд в Wolverine
+            var response = await Http.PutAsJsonAsync("/api/tasks/status", new
+            {
+                TaskId = draggedTask.Id,
+                NewStatus = newStatus
+            });
+
+            if (!response.IsSuccessStatusCode)
+            {
+                // Если бэкенд вернул ошибку, откатываем статус назад
+                draggedTask.Status = oldStatus;
+                StateHasChanged();
+            }
+
+            draggedTask = null;
+        }
+    }
+
+    public class TaskDto
+    {
+        public Guid Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public TaskStatus Status { get; set; } // Теперь менять можно!
+        public string AssignedUserEmail { get; set; } = string.Empty;
+        public Guid? ProjectId { get; set; }
+    }
     record ProjectDto(Guid Id, string Name, Guid OwnerId, List<ProjectMemberDto> Members);
     record ProjectMemberDto(Guid UserId, string Email);
 }
