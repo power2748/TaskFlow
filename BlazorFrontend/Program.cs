@@ -1,6 +1,7 @@
 using Blazored.LocalStorage;
 using BlazorFrontend.Auth;
 using BlazorFrontend.Auth;
+using BlazorFrontend.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
@@ -35,6 +36,7 @@ public class Program
         builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
             sp.GetRequiredService<CustomAuthStateProvider>());
         builder.Services.AddAuthorizationCore();
+        builder.Services.AddSingleton<ToastService>();
 
         await builder.Build().RunAsync();
     }

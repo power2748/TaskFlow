@@ -5,6 +5,8 @@
 @inject HttpClient Http
 @inject CustomAuthStateProvider AuthProvider
 @inject NavigationManager Nav
+@using BlazorFrontend.Models
+@inject BlazorFrontend.Services.ToastService ToastService
 
 <div class="main-block">
     <nav>
@@ -339,6 +341,7 @@
             projectTasks = projectTasks.Where(t => t.Id != taskId).ToList();
             allTasks = personalTasks.Concat(projectTasks).ToList();
         }
+        ToastService.ShowToast("Задача удалена", "Вы успешно удалили задачу!", ToastType.Success);
     }
 
     private void HandleDragStart(TaskDto task)
