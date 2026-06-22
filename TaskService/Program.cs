@@ -35,15 +35,16 @@ public class Program
             opts.CodeGeneration.AlwaysUseServiceLocationFor<TaskService.Data.AppDbContext>();
             //opts.PublishMessage<TaskAssigned>().To(new Uri("tcp://127.0.0.1:5005"));
             //opts.UseEntityFrameworkCoreTransactions();
-            var endpointUri = builder.Configuration["Endpoint:notificationservice:wolverine-tcp"];
+            var notificationEndpointUri = builder.Configuration["Endpoint:notificationservice:wolverine-tcp"];
+            var analyticsEndpointUri = builder.Configuration["Endpoint:analyticsservice:wolverine-analytics-tcp"];
 
-            if (!string.IsNullOrEmpty(endpointUri))
+            if (!string.IsNullOrEmpty(notificationEndpointUri))
             {
                 // Aspire может вернуть адрес в виде "tcp://localhost:5005" или "tcp://127.0.0.1:5005"
-                opts.PublishMessage<TaskAssigned>().To(new Uri(endpointUri));
-                opts.PublishMessage<TaskUpdated>().To(new Uri(endpointUri));
-                opts.PublishMessage<TaskStatusUpdated>().To(new Uri(endpointUri));
-                opts.PublishMessage<TaskDeleted>().To(new Uri(endpointUri));
+                opts.PublishMessage<TaskAssigned>().To(new Uri(notificationEndpointUri));
+                opts.PublishMessage<TaskUpdated>().To(new Uri(notificationEndpointUri));
+                opts.PublishMessage<TaskStatusUpdated>().To(new Uri(notificationEndpointUri));
+                opts.PublishMessage<TaskDeleted>().To(new Uri(notificationEndpointUri)); 
             }
             else
             {
@@ -52,6 +53,21 @@ public class Program
                 opts.PublishMessage<TaskUpdated>().To(new Uri("tcp://127.0.0.1:5005"));
                 opts.PublishMessage<TaskStatusUpdated>().To(new Uri("tcp://127.0.0.1:5005"));
                 opts.PublishMessage<TaskDeleted>().To(new Uri("tcp://127.0.0.1:5005"));
+            }
+
+            if (!string.IsNullOrEmpty(analyticsEndpointUri))
+            {
+                opts.PublishMessage<TaskAssigned>().To(new Uri(analyticsEndpointUri));
+                opts.PublishMessage<TaskUpdated>().To(new Uri(analyticsEndpointUri));
+                opts.PublishMessage<TaskStatusUpdated>().To(new Uri(analyticsEndpointUri));
+                opts.PublishMessage<TaskDeleted>().To(new Uri(analyticsEndpointUri));
+            }
+            else
+            {
+                opts.PublishMessage<TaskAssigned>().To(new Uri("tcp://127.0.0.1:5007"));
+                opts.PublishMessage<TaskUpdated>().To(new Uri("tcp://127.0.0.1:5007"));
+                opts.PublishMessage<TaskStatusUpdated>().To(new Uri("tcp://127.0.0.1:5007"));
+                opts.PublishMessage<TaskDeleted>().To(new Uri("tcp://127.0.0.1:5007"));
             }
         });
         builder.Services.AddWolverineHttp();

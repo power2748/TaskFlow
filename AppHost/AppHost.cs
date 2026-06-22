@@ -34,4 +34,12 @@ taskService.WithReference(notificationService);
 builder.AddProject<Projects.BlazorFrontend>("blazorfrontend")
        .WithReference(gateway);
 
+var analyticsService = builder.AddProject<Projects.AnalyticsService>("analyticsservice")
+    .WithHttpEndpoint(port: 5243, name: "http")
+    .WithEndpoint(targetPort: 5007, scheme: "tcp", name: "wolverine-analytics-tcp")
+    .WithReference(authDb)
+    .WaitFor(authDb);
+
+taskService.WithReference(analyticsService);
+
 builder.Build().Run();

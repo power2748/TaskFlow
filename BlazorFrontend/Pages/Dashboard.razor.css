@@ -14,6 +14,14 @@
     border-color: #F79E02;
 }
 
+.nav-tabs-custom {
+    grid-column: 1;
+    margin-left: 30px;
+    margin-bottom: 10px;
+    display: flex;
+    gap: 15px;
+}
+
 .title {
     grid-column: 2;
     justify-self: center;
@@ -42,6 +50,27 @@
     padding-right: 1rem;
 }
 
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: #777;
+    font-size: 1.1em;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+}
+
+    .tab-btn.active {
+        color: #000;
+        font-weight: bold;
+        border-bottom: 3px solid #2196f3;
+    }
+
+    .tab-btn:hover {
+        color: #2196f3;
+    }
+
 .task-title, .project-title {
     display: flex;
     flex-flow: row wrap;
@@ -49,7 +78,7 @@
     color: white;
 }
 
-    .task-title button, .project-title button {
+    .task-title button, .project-title button, .analytics-container button {
         margin-left: 2rem;
         background-color: #1B9CE5;
         color: white;
@@ -58,7 +87,7 @@
         transition: 0.3s ease;
     }
 
-        .task-title button:hover, .project-title button:hover {
+        .task-title button:hover, .project-title button:hover, .analytics-container button:hover {
             background-color: white;
             color: black;
             mix-blend-mode: screen;
@@ -180,4 +209,8 @@
 
 .card-done {
     border-left: 5px solid #28a745;
+}
+
+.analytics-container h3 {
+    color: white;
 }

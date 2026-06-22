@@ -2,6 +2,7 @@
   <Folder Name="/Элементы решения/">
     <File Path="Directory.Build.props" />
   </Folder>
+  <Project Path="AnalyticsService/AnalyticsService.csproj" />
   <Project Path="AppHost/AppHost.csproj" />
   <Project Path="AuthService/AuthService.csproj" />
   <Project Path="BlazorFrontend/BlazorFrontend.csproj" />
