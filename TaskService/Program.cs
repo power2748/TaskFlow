@@ -42,6 +42,7 @@ public class Program
                 // Aspire может вернуть адрес в виде "tcp://localhost:5005" или "tcp://127.0.0.1:5005"
                 opts.PublishMessage<TaskAssigned>().To(new Uri(endpointUri));
                 opts.PublishMessage<TaskUpdated>().To(new Uri(endpointUri));
+                opts.PublishMessage<TaskStatusUpdated>().To(new Uri(endpointUri));
                 opts.PublishMessage<TaskDeleted>().To(new Uri(endpointUri));
             }
             else
@@ -49,6 +50,7 @@ public class Program
                 // Резервный адрес для локального запуска без оркестратора
                 opts.PublishMessage<TaskAssigned>().To(new Uri("tcp://127.0.0.1:5005"));
                 opts.PublishMessage<TaskUpdated>().To(new Uri("tcp://127.0.0.1:5005"));
+                opts.PublishMessage<TaskStatusUpdated>().To(new Uri("tcp://127.0.0.1:5005"));
                 opts.PublishMessage<TaskDeleted>().To(new Uri("tcp://127.0.0.1:5005"));
             }
         });

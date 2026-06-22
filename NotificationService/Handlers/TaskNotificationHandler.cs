@@ -30,6 +30,24 @@ namespace NotificationService.Handlers
             _logger.LogInformation("========================================================");
         }
 
+        public void Handle(TaskStatusUpdated message)
+        {
+            string GetStatusName(int status) => status switch
+            {
+                0 => "TODO",
+                1 => "In progress",
+                2 => "Code review",
+                3 => "Done"
+            };
+
+            _logger.LogInformation("========================================================");
+            _logger.LogInformation("🔄 [СМЕНА СТАТУСА] Задача {TaskId} изменила свой этап!", message.TaskId);
+            _logger.LogInformation("Статус: \"{OldStatus}\" ➡️ \"{NewStatus}\"",
+                GetStatusName(message.OldStatus), GetStatusName(message.NewStatus));
+            _logger.LogInformation("Уведомление ушло пользователю: {UserId}", message.AssigneeId);
+            _logger.LogInformation("========================================================");
+        }
+
         public void Handle(TaskDeleted message)
         {
             _logger.LogInformation("========================================================");
