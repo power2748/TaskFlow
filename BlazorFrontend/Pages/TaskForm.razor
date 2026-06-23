@@ -1,0 +1,111 @@
+﻿@page "/tasks/create"
+@page "/tasks/{Id:guid}"
+@page "/tasks/create/{ProjectId:guid}"
+@using System.Security.Claims
+@attribute [Authorize]
+@inject HttpClient Http
+@inject CustomAuthStateProvider AuthProvider
+@inject NavigationManager Nav
+
+<div class="main-block">
+    <nav>
+        <div class="nav-main">
+            <div class="title">
+                <h1>TaskFlow</h1>
+            </div>
+            <div class="exit-btn">
+               <a href="/dashboard">Назад</a>
+            </div>
+        </div>
+    </nav>
+    <div class="task-block">
+        <div class="task-title">
+            <h3>@(Id == null ? "Создать задачу" : "Редактировать задачу")</h3>
+        </div>
+        <div class="task-edit">
+            <input @bind="title" placeholder="Название" />
+            <input @bind="description" placeholder="Описание" />
+
+            @* @if (Id != null)
+            {
+                <div class="checkbox-block">
+                    <label>
+                        <input type="checkbox" class="checkbox-input" @bind="isCompleted" /> Выполнено
+                    </label>
+                </div>
+            } *@
+            <button @onclick="SaveAsync">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    string title = "", description = "";
+    bool isCompleted = false;
+
+    // Этот метод срабатывает автоматически при открытии страницы
+    protected override async Task OnParametersSetAsync()
+    {
+        // Если мы зашли в режиме редактирования (Id передан в URL)
+        if (Id != null)
+        {
+            try
+            {
+                // Запрашиваем данные текущей задачи у бэкенда
+                var task = await Http.GetFromJsonAsync<TaskDetailDto>($"/api/tasks/single/{Id}");
+                if (task != null)
+                {
+                    // Подставляем данные в форму!
+                    title = task.Title;
+                    description = task.Description;
+                    isCompleted = task.IsCompleted;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка загрузки задачи: {ex.Message}");
+            }
+        }
+        else
+        {
+            // Если режим создания нового — сбрасываем поля
+            title = "";
+            description = "";
+            isCompleted = false;
+        }
+    }
+
+    [Parameter] public Guid? ProjectId { get; set; }
+    async Task SaveAsync()
+    {
+        if (Id == null)
+        {
+            // Создание новой задачи (с фиксом UserId, который мы делали ранее)
+            var authState = await AuthProvider.GetAuthenticationStateAsync();
+            var userIdString = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var currentUserId))
+            {
+                Nav.NavigateTo("/login");
+                return;
+            }
+
+            await Http.PostAsJsonAsync("/api/tasks",
+                new { title, description, createdBy = currentUserId, projectId = ProjectId });
+        }
+        else
+        {
+            // Редактирование существующей задачи!
+            // Отправляем PUT запрос на /api/tasks/{Id} со всеми измененными полями
+            await Http.PutAsJsonAsync($"/api/tasks/{Id}",
+                new { title, description, isCompleted });
+        }
+
+        Nav.NavigateTo("/dashboard");
+    }
+
+    // Вспомогательный record для десериализации старых данных задачи
+    record TaskDetailDto(Guid Id, string Title, string Description, bool IsCompleted, string AssignedUserEmail);
+}

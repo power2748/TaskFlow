@@ -1,0 +1,56 @@
+﻿@using BlazorFrontend.Services
+@using BlazorFrontend.Models
+@inject ToastService ToastService
+@implements IDisposable
+
+<div class="toast-container">
+    @foreach (var toast in ToastService.Toasts)
+    {
+        <div class="toast-card @GetClass(toast.Type)">
+            <div class="toast-header">
+                <strong>@toast.Title</strong>
+                <button class="close-btn" @onclick="() => RemoveToast(toast)">×</button>
+            </div>
+            <div class="toast-body">
+                @toast.Message
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Подписываемся на события сервиса
+        ToastService.OnCreate += UpdateUI;
+        ToastService.OnRemove += UpdateUI;
+        //ToastService.ShowToast("Проверка связи", "Если ты это видишь, контейнер работает!", ToastType.Success);
+    }
+
+    private async void UpdateUI()
+    {
+        // InvokeAsync гарантирует, что Blazor перерисует интерфейс в основном потоке
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void RemoveToast(ToastMessage toast)
+    {
+        ToastService.Toasts.Remove(toast);
+        StateHasChanged();
+    }
+
+    private string GetClass(BlazorFrontend.Models.ToastType type) => type switch
+    {
+        BlazorFrontend.Models.ToastType.Success => "toast-success",
+        BlazorFrontend.Models.ToastType.Warning => "toast-warning",
+        BlazorFrontend.Models.ToastType.Error => "toast-error",
+        _ => "toast-info"
+    };
+
+    public void Dispose()
+    {
+        // Отписываемся при уничтожении компонента, чтобы не было утечек памяти
+        ToastService.OnCreate -= UpdateUI;
+        ToastService.OnRemove -= UpdateUI;
+    }
+}

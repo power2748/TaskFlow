@@ -1,0 +1,45 @@
+var builder = DistributedApplication.CreateBuilder(args);
+
+// PostgreSQL
+var postgres = builder.AddPostgres("taskflow-db")
+    .WithPgAdmin().WithDataVolume(); // удобная UI для БД в Dashboard
+
+var authDb = postgres.AddDatabase("authdb");
+var taskDb = postgres.AddDatabase("taskdb");
+
+// Сервисы
+var authService = builder.AddProject<Projects.AuthService>("authservice")
+                     .WithHttpEndpoint(port: 5001, name: "http") // <-- Фиксируем порт бэкенда!
+                     .WithReference(authDb).WaitFor(authDb);
+
+var taskService = builder.AddProject<Projects.TaskService>("taskservice")
+    .WithHttpEndpoint(port: 5002, name: "http") // <-- Фиксируем порт бэкенда!
+    .WithReference(taskDb)
+    .WithReference(authDb)
+    .WaitFor(taskDb);
+
+// Мы жестко говорим Aspire: "Всегда запускай Gateway на порту 5000 для HTTP"
+var gateway = builder.AddProject<Projects.Gateway>("gateway")
+                     .WithHttpEndpoint(port: 5000, name: "http") // <-- Фиксируем порт шлюза!
+                     .WithReference(authService);
+
+var notificationService = builder.AddProject<Projects.NotificationService>("notificationservice")
+    .WithHttpEndpoint(port: 5100, name: "http") // HTTP эндпоинт
+    .WithEndpoint(targetPort: 5005, scheme: "tcp", name: "wolverine-tcp"); // фиксируем порт для TCP обмена Wolverine
+
+// Если TaskService должен знать адрес уведомлений через переменные среды:
+taskService.WithReference(notificationService);
+
+// Передаем фронтенду
+builder.AddProject<Projects.BlazorFrontend>("blazorfrontend")
+       .WithReference(gateway);
+
+var analyticsService = builder.AddProject<Projects.AnalyticsService>("analyticsservice")
+    .WithHttpEndpoint(port: 5243, name: "http")
+    .WithEndpoint(targetPort: 5007, scheme: "tcp", name: "wolverine-analytics-tcp")
+    .WithReference(authDb)
+    .WaitFor(authDb);
+
+taskService.WithReference(analyticsService);
+
+builder.Build().Run();

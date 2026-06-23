@@ -1,0 +1,103 @@
+﻿@page "/projects/{Id:guid}"
+@attribute [Authorize]
+@inject HttpClient Http
+@inject CustomAuthStateProvider AuthProvider
+@inject NavigationManager Nav
+@using System.Security.Claims
+
+<div class="main-block">
+    <nav>
+        <div class="nav-main">
+            <div class="title">
+                <h1>TaskFlow</h1>
+            </div>
+            <div class="exit-btn">
+                <a href="/dashboard">Назад</a>
+            </div>
+        </div>
+    </nav>
+    <div class="project-block">
+        <div class="project-title">
+            <h3>@project?.Name</h3>
+        </div>
+        <div class="project-edit">
+            @if (project is not null)
+            {
+                <h4>Участники</h4>
+                @foreach (var member in project.Members)
+                {
+                    <div class="member-email">@member.Email</div>
+                }
+
+                @if (isOwner)
+                {
+                    <input @bind="newMemberEmail" placeholder="Email участника" />
+                    <button @onclick="AddMemberAsync">Добавить участника</button>
+                }
+                <div class="task-title">
+                    <h4>Задачи проекта</h4>
+                    <button @onclick='() => Nav.NavigateTo($"/tasks/create/{Id}")'>
+                        Добавить задачу
+                    </button>
+                </div>
+                <div class="task-block">
+                    @foreach (var task in tasks)
+                    {
+                        <div class="task">
+                            <b>@task.Title</b> — @(task.IsCompleted ? "✅" : "⏳")
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    ProjectDto? project;
+    List<TaskDto> tasks = new();
+    Guid currentUserId;
+    bool isOwner;
+    string newMemberEmail = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthProvider.GetAuthenticationStateAsync();
+        var userIdStr = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdStr)) { Nav.NavigateTo("/login"); return; }
+
+        currentUserId = Guid.Parse(userIdStr);
+
+        var allProjects = await Http.GetFromJsonAsync<List<ProjectDto>>(
+            $"/api/projects/{currentUserId}");
+        project = allProjects?.FirstOrDefault(p => p.Id == Id);
+
+        if (project is not null)
+            isOwner = project.OwnerId == currentUserId;
+
+        tasks = await Http.GetFromJsonAsync<List<TaskDto>>(
+            $"/api/projects/{Id}/tasks") ?? new();
+        tasks = tasks.Where(t => t.ProjectId == Id).ToList();
+    }
+
+    async Task AddMemberAsync()
+    {
+        if (string.IsNullOrEmpty(newMemberEmail)) return;
+
+        await Http.PostAsJsonAsync("/api/projects/members", new
+        {
+            projectId = Id,
+            memberEmail = newMemberEmail,
+            requestedBy = currentUserId
+        });
+
+        newMemberEmail = "";
+        await OnInitializedAsync();
+    }
+
+    record ProjectDto(Guid Id, string Name, Guid OwnerId, List<ProjectMemberDto> Members);
+    record ProjectMemberDto(Guid UserId, string Email);
+    record TaskDto(Guid Id, string Title, bool IsCompleted, Guid? ProjectId);
+}
