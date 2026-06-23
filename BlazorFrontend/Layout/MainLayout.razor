@@ -1,8 +1,106 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization @* Для AuthenticationStateProvider *@
+@using Microsoft.AspNetCore.SignalR.Client @* Для HubConnectionBuilder *@
+@using System.Security.Claims @* Для ClaimTypes *@
+@using BlazorFrontend.Services @* Для ToastService и ToastType (проверь этот namespace!) *@
+@using BlazorFrontend.Models @* На случай, если сам enum ToastType лежит в папке Models *@
 @using BlazorFrontend.Shared
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ToastService ToastService
+@implements IAsyncDisposable
 
 <main>
     @Body
     <ToastContainer />
 </main>
 
+@code {
+    private HubConnection? hubConnection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // 1. Безопасно запрашиваем состояние авторизации
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            if (authState?.User?.Identity == null || !authState.User.Identity.IsAuthenticated)
+            {
+                Console.WriteLine("[SIGNALR] Пользователь не авторизован. Пропускаем подключение.");
+                return;
+            }
+
+            var user = authState.User;
+
+            // 2. Ищем клейм с ID пользователя
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier) ?? user.FindFirst("sub");
+            if (userIdClaim == null || string.IsNullOrEmpty(userIdClaim.Value))
+            {
+                Console.WriteLine("[SIGNALR WARN] ID пользователя не найден в клеймах токена.");
+                return;
+            }
+
+            if (!Guid.TryParse(userIdClaim.Value, out Guid currentUserId))
+            {
+                Console.WriteLine($"[SIGNALR WARN] Значение '{userIdClaim.Value}' не является валидным Guid.");
+                return;
+            }
+
+            // 3. Настраиваем сокет-подключение через YARP шлюз
+            hubConnection = new HubConnectionBuilder()
+                .WithUrl($"http://localhost:5000/notifications?userId={currentUserId}")
+                .WithAutomaticReconnect()
+                .Build();
+
+            // 4. Ловим уведомления от бэкенда
+            hubConnection.On<string, string>("ReceiveNotification", (title, message) =>
+            {
+                InvokeAsync(() =>
+                {
+                    var lowerTitle = title?.ToLower() ?? "";
+                    var lowerMessage = message?.ToLower() ?? "";
+
+                    // 1. Списки задач на доске обновляем В ЛЮБОМ СЛУЧАЕ
+                    if (lowerTitle.Contains("удал") || lowerMessage.Contains("удал"))
+                    {
+                        ToastService.TriggerTasksChanged();
+                    }
+
+                    // 2. Логика отображения всплывающего окна (тоста):
+                    // Если задачу удалил АДМИН (в тексте сообщения есть "админ"), мы показываем варнинг.
+                    // Обычный пользователь сразу увидит, что админ стёр его таску.
+                    if (lowerMessage.Contains("админ"))
+                    {
+                        ToastService.ShowToast(title, message, ToastType.Warning);
+                        return;
+                    }
+
+                    // 3. Для всех остальных стандартных сокетных уведомлений от собственных действий
+                    // мы просто выходим (return), так как у текущего юзера уже горит его локальный зеленый тост.
+                });
+            });
+
+            Console.WriteLine($"[SIGNALR] Попытка подключения для: {currentUserId}...");
+            await hubConnection.StartAsync();
+            Console.WriteLine("[SIGNALR] Соединение успешно установлено!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[CRITICAL FRONTEND ERROR] Ошибка в MainLayout: {ex.Message}");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            try
+            {
+                await hubConnection.DisposeAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[SIGNALR DISPOSE ERROR]: {ex.Message}");
+            }
+        }
+    }
+}

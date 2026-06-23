@@ -247,12 +247,12 @@
     private string activeTab = "board"; // Управляет текущим отображением
     private DashboardAnalyticsModel? analyticsData;
 
-    List<TaskDto>? allTasks;
-    List<TaskDto> personalTasks = new();
-    List<TaskDto> projectTasks = new();
-    List<ProjectDto>? projects;
+    private List<TaskDto>? allTasks;
+    private List<TaskDto> personalTasks = new();
+    private List<TaskDto> projectTasks = new();
+    private List<ProjectDto>? projects;
     private TaskDto? draggedTask;
-    Guid currentUserId;
+    private Guid currentUserId;
 
     public enum TaskStatus
     {
@@ -275,33 +275,65 @@
 
         currentUserId = Guid.Parse(userIdStr);
 
-        allTasks = await Http.GetFromJsonAsync<List<TaskDto>>($"/api/tasks/{currentUserId}");
+        // 1. Первоначальная фоновая загрузка данных
+        await LoadDataAsync();
 
-        if (allTasks != null)
+        // 2. Подписываемся на реалтайм-обновления от SignalR
+        ToastService.OnTasksChanged += HandleTasksChanged;
+    }
+
+    // Изолированный метод загрузки основных данных
+    private async Task LoadDataAsync()
+    {
+        try
         {
-            personalTasks = allTasks.Where(t => t.ProjectId == null).ToList();
-            projectTasks = allTasks.Where(t => t.ProjectId != null).ToList();
-        }
+            allTasks = await Http.GetFromJsonAsync<List<TaskDto>>($"/api/tasks/{currentUserId}");
 
-        projects = await Http.GetFromJsonAsync<List<ProjectDto>>($"/api/projects/{currentUserId}");
+            if (allTasks != null)
+            {
+                personalTasks = allTasks.Where(t => t.ProjectId == null).ToList();
+                projectTasks = allTasks.Where(t => t.ProjectId != null).ToList();
+            }
+
+            projects = await Http.GetFromJsonAsync<List<ProjectDto>>($"/api/projects/{currentUserId}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERROR] Ошибка при обновлении списков: {ex.Message}");
+        }
+    }
+
+    // Обработчик события SignalR из ToastService
+    private async void HandleTasksChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await LoadDataAsync();
+
+            // Если в момент пуша открыта вкладка аналитики — её тоже имеет смысл обновить
+            if (activeTab == "analytics")
+            {
+                await RefreshAnalyticsOnlyAsync();
+            }
+
+            StateHasChanged(); // Перерисовываем интерфейс
+        });
     }
 
     private async Task LoadAnalyticsAsync()
     {
         activeTab = "analytics";
         analyticsData = null;
+        await RefreshAnalyticsOnlyAsync();
+    }
+
+    // Вынесенный метод для рефреша сугубо аналитики без дергания тасок
+    private async Task RefreshAnalyticsOnlyAsync()
+    {
         try
         {
-            // Достань текущий Id залогиненного пользователя из твоего стейта/компонента
-            // Например, если у тебя есть переменная userId, используй её.
-            // Для примера беру строку, подставь туда реальное получение Id:
-            var authState = await AuthProvider.GetAuthenticationStateAsync();
-            var currentUserIdStr = Guid.Parse(authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value).ToString();
-
             var request = new HttpRequestMessage(HttpMethod.Get, "/api/admin/dashboard");
-
-            // Явно передаем кастомный заголовок с ID пользователя
-            request.Headers.Add("X-User-Id", currentUserIdStr);
+            request.Headers.Add("X-User-Id", currentUserId.ToString());
 
             var response = await Http.SendAsync(request);
 
@@ -340,8 +372,9 @@
             personalTasks = personalTasks.Where(t => t.Id != taskId).ToList();
             projectTasks = projectTasks.Where(t => t.Id != taskId).ToList();
             allTasks = personalTasks.Concat(projectTasks).ToList();
+
+            ToastService.ShowToast("Задача удалена", "Вы успешно удалили задачу!", ToastType.Success);
         }
-        ToastService.ShowToast("Задача удалена", "Вы успешно удалили задачу!", ToastType.Success);
     }
 
     private void HandleDragStart(TaskDto task)
@@ -367,15 +400,26 @@
                 draggedTask.Status = oldStatus;
                 StateHasChanged();
             }
+            else
+            {
+                // Опционально: уведомляем систему, что мы сами локально передвинули статус
+                ToastService.ShowToast("Статус изменен", $"Задача перемещена в {newStatus}", ToastType.Info);
+            }
 
             draggedTask = null;
         }
     }
 
+    // Освобождаем подписку при закрытии страницы/компонента
+    public void Dispose()
+    {
+        ToastService.OnTasksChanged -= HandleTasksChanged;
+    }
+
     // Классы-модели десериализации аналитики
     public class DashboardAnalyticsModel
     {
-        public bool IsAdminView { get; set; } // Флаг: админская ли это панель
+        public bool IsAdminView { get; set; }
         public int TotalCreated { get; set; }
         public int TotalDone { get; set; }
         public int TotalDeleted { get; set; }

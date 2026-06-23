@@ -1,36 +1,53 @@
 ﻿using Contracts.Events;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
+using NotificationService.Hubs;
 
 namespace NotificationService.Handlers
 {
     public class TaskNotificationHandler
     {
         private readonly ILogger<TaskNotificationHandler> _logger;
+        private readonly IHubContext<NotificationHub> _hubContext;
 
-        public TaskNotificationHandler(ILogger<TaskNotificationHandler> logger)
+        public TaskNotificationHandler(ILogger<TaskNotificationHandler> logger, IHubContext<NotificationHub> hubContext)
         {
             _logger = logger;
+            _hubContext = hubContext;
         }
 
-        // Этот метод автоматически вызовется, как только TaskService сделает bus.PublishAsync!
-        public void Handle(TaskAssigned message)
+        public async Task Handle(TaskAssigned message)
         {
-            // Имитируем отправку уведомления. В будущем здесь будет SignalR для фронтенда или SMTP клиент.
             _logger.LogInformation("========================================================");
             _logger.LogInformation("🔔 [НОВОЕ УВЕДОМЛЕНИЕ ДЛЯ ПОЛЬЗОВАТЕЛЯ {UserId}]:", message.AssigneeId);
             _logger.LogInformation("Вам назначена новая задача: \"{TaskTitle}\" (ID: {TaskId})", message.TaskTitle, message.TaskId);
             _logger.LogInformation("========================================================");
+
+            // ОТПРАВКА НА ФРОНТЕНД: отправляем в группу конкретного пользователя
+            string targetUserId = message.AssigneeId.ToString();
+            await _hubContext.Clients.Group(targetUserId).SendAsync(
+                "ReceiveNotification",
+                "Новая задача!",
+                $"Вам назначена задача: \"{message.TaskTitle}\""
+            );
         }
 
-        public void Handle(TaskUpdated message)
+        public async Task Handle(TaskUpdated message)
         {
             _logger.LogInformation("========================================================");
             _logger.LogInformation("✏️ [ОБНОВЛЕНИЕ] Задача (ID: {TaskId}) изменена пользователем {UserId}!", message.TaskId, message.AssigneeId);
             _logger.LogInformation("Старое название: \"{OldTitle}\" -> Новое: \"{NewTitle}\"", message.OldTitle, message.NewTitle);
             _logger.LogInformation("========================================================");
+
+            string targetUserId = message.AssigneeId.ToString();
+            await _hubContext.Clients.Group(targetUserId).SendAsync(
+                "ReceiveNotification",
+                "Задача обновлена",
+                $"Название изменено: \"{message.NewTitle}\""
+            );
         }
 
-        public void Handle(TaskStatusUpdated message)
+        public async Task Handle(TaskStatusUpdated message)
         {
             string GetStatusName(int status) => status switch
             {
@@ -46,14 +63,28 @@ namespace NotificationService.Handlers
                 GetStatusName(message.OldStatus), GetStatusName(message.NewStatus));
             _logger.LogInformation("Уведомление ушло пользователю: {UserId}", message.AssigneeId);
             _logger.LogInformation("========================================================");
+
+            string targetUserId = message.AssigneeId.ToString();
+            await _hubContext.Clients.Group(targetUserId).SendAsync(
+                "ReceiveNotification",
+                "Смена статуса задачи",
+                $"Задача переведена на этап: \"{GetStatusName(message.NewStatus)}\""
+            );
         }
 
-        public void Handle(TaskDeleted message)
+        public async Task Handle(TaskDeleted message)
         {
             _logger.LogInformation("========================================================");
             _logger.LogInformation("🗑️ [УДАЛЕНИЕ] Задача \"{TaskTitle}\" (ID: {TaskId}) была удалена!", message.TaskTitle, message.TaskId);
             _logger.LogInformation("Уведомление отправлено бывшему исполнителю: {UserId}", message.AssigneeId);
             _logger.LogInformation("========================================================");
+
+            string targetUserId = message.AssigneeId.ToString();
+            await _hubContext.Clients.Group(targetUserId).SendAsync(
+                "ReceiveNotification",
+                "Задача удалена",
+                $"Админ удалил задачу: \"{message.TaskTitle}\""
+            );
         }
     }
 }

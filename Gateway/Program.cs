@@ -16,6 +16,7 @@ public class Program
                         .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
 
         var app = builder.Build();
+        app.UseWebSockets();
 
         app.UseCors("AllowAll");
 

@@ -1,3 +1,4 @@
+using NotificationService.Hubs;
 using Wolverine;
 using Wolverine.Transports.Tcp;
 
@@ -22,12 +23,24 @@ public class Program
             opts.ListenAtPort(5005);
             opts.UseRuntimeCompilation();
         });
+        builder.Services.AddCors(options =>
+        {
+            options.AddDefaultPolicy(policy =>
+            {
+                policy.WithOrigins("http://localhost:5239", "https://localhost:7083") // Урл твоего фронтенда
+                      .AllowAnyHeader()
+                      .AllowAnyMethod()
+                      .AllowCredentials(); // ОБЯЗАТЕЛЬНО для SignalR
+            });
+        });
+        builder.Services.AddSignalR();
 
         var app = builder.Build();
 
         app.MapDefaultEndpoints();
 
         app.MapGet("/", () => "Notification Service запущен и слушает шину...");
+        app.MapHub<NotificationHub>("/notifications");
 
         app.Run();
     }
